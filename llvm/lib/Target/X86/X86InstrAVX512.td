@@ -12694,6 +12694,11 @@ let Predicates = [HasBF16, HasVLX] in {
   def : Pat<(v8bf16 (X86vfpround (loadv8f32 addr:$src))),
             (VCVTNEPS2BF16Z256rm addr:$src)>;
 
+  def : Pat<(v8f32 (fpextend (v8bf16 VR128X:$src))),
+            (VPSLLDZ256ri (VPMOVZXWDZ256rr VR128X:$src), 16)>;
+  def : Pat<(v8f32 (fpextend (loadv8bf16 addr:$src))),
+            (VPSLLDZ256ri (VPMOVZXWDZ256rm addr:$src), 16)>;
+
   // TODO: No scalar broadcast due to we don't support legal scalar bf16 so far.
 }
 
@@ -12708,6 +12713,11 @@ let Predicates = [HasBF16] in {
             (VCVTNEPS2BF16Zrr VR512:$src)>;
   def : Pat<(v16bf16 (X86vfpround (loadv16f32 addr:$src))),
             (VCVTNEPS2BF16Zrm addr:$src)>;
+
+  def : Pat<(v16f32 (fpextend (v16bf16 VR256X:$src))),
+            (VPSLLDZri (VPMOVZXWDZrr VR256X:$src), 16)>;
+  def : Pat<(v16f32 (fpextend (loadv16bf16 addr:$src))),
+            (VPSLLDZri (VPMOVZXWDZrm addr:$src), 16)>;
   // TODO: No scalar broadcast due to we don't support legal scalar bf16 so far.
 }
 

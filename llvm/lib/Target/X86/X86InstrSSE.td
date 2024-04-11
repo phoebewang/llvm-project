@@ -8314,7 +8314,7 @@ let Predicates = [HasAVXNECONVERT] in {
        f256mem>, T8;
   defm VCVTNEPS2BF16 : VCVTNEPS2BF16_BASE, VEX, T8, XS, ExplicitVEXPrefix;
 
-  def : Pat<(v8bf16 (X86cvtneps2bf16 (v4f32 VR128X:$src))),
+  def : Pat<(v8bf16 (X86cvtneps2bf16 (v4f32 VR128:$src))),
             (VCVTNEPS2BF16rr VR128:$src)>;
   def : Pat<(v8bf16 (X86cvtneps2bf16 (loadv4f32 addr:$src))),
             (VCVTNEPS2BF16rm addr:$src)>;
@@ -8322,6 +8322,11 @@ let Predicates = [HasAVXNECONVERT] in {
             (VCVTNEPS2BF16Yrr VR256:$src)>;
   def : Pat<(v8bf16 (X86vfpround (loadv8f32 addr:$src))),
             (VCVTNEPS2BF16Yrm addr:$src)>;
+
+  def : Pat<(v8f32 (fpextend (v8bf16 VR128:$src))),
+            (VPSLLDYri (VPMOVZXWDYrr VR128:$src), 16)>;
+  def : Pat<(v8f32 (fpextend (loadv8bf16 addr:$src))),
+            (VPSLLDYri (VPMOVZXWDYrm addr:$src), 16)>;
 }
 
 def : InstAlias<"vcvtneps2bf16x\t{$src, $dst|$dst, $src}",
