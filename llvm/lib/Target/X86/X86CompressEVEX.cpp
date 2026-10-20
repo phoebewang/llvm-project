@@ -453,6 +453,9 @@ static bool tryCompressMaskProducer(MachineInstr &MI, MachineBasicBlock &MBB,
 
   for (MachineInstr &CurMI : llvm::make_range(
            std::next(MachineBasicBlock::iterator(MI)), MBB.end())) {
+    if (CurMI.isDebugInstr())
+      continue;
+
     if (CurMI.readsRegister(MaskReg, TRI)) {
       if (KMovMI || BlendMI)
         return false; // Fail: Mask has MULTIPLE uses
@@ -515,7 +518,7 @@ static bool tryCompressMaskProducer(MachineInstr &MI, MachineBasicBlock &MBB,
   }
 
   // Check if MaskReg is used in any other basic blocks
-  for (const MachineInstr &UseMI : MRI->use_instructions(MaskReg))
+  for (const MachineInstr &UseMI : MRI->use_nodbg_instructions(MaskReg))
     if (UseMI.getParent() != &MBB)
       return false;
 
@@ -567,6 +570,16 @@ static bool tryCompressMaskProducer(MachineInstr &MI, MachineBasicBlock &MBB,
   }
   assert(NewMI && "Expected a compressed instruction");
   NewMI->setAsmPrinterFlag(X86::AC_EVEX_2_VEX);
+
+  // MaskReg is no longer defined here. Conservatively drop its debug users
+  // rather than leaving them describing a stale register.
+  for (MachineInstr &DbgMI :
+       llvm::make_early_inc_range(MRI->use_instructions(MaskReg))) {
+    if (DbgMI.isDebugValue())
+      DbgMI.setDebugValueUndef();
+    else if (DbgMI.isDebugPHI() && !llvm::is_contained(ToErase, &DbgMI))
+      ToErase.push_back(&DbgMI);
+  }
   ToErase.push_back(&MI);
   if (ConstantDefOnlyFeedsCmp && MI.getOperand(2).isKill())
     ToErase.push_back(ConstantDef);
