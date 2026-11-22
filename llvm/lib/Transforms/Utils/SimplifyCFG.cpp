@@ -2336,7 +2336,6 @@ static bool canSinkInstructions(
   }
 
   for (unsigned OI = 0, OE = I0->getNumOperands(); OI != OE; ++OI) {
-    Value *Op = I0->getOperand(OI);
     auto SameAsI0 = [&I0, OI](const Instruction *I) {
       assert(I->getNumOperands() == I0->getNumOperands());
       return I->getOperand(OI) == I0->getOperand(OI);
@@ -2345,7 +2344,13 @@ static bool canSinkInstructions(
       auto CanReplaceOperand = [OI](const Instruction *I) {
         return canReplaceOperandWithVariable(I, OI);
       };
-      if ((isa<Constant>(Op) && !replacingOperandWithVariableIsCheap(I0, OI)) ||
+      // Check every instruction, not just I0: any of them may have the
+      // constant operand.
+      auto IsCheapToReplaceOperand = [OI](const Instruction *I) {
+        return !isa<Constant>(I->getOperand(OI)) ||
+               replacingOperandWithVariableIsCheap(I, OI);
+      };
+      if (!all_of(Insts, IsCheapToReplaceOperand) ||
           !all_of(Insts, CanReplaceOperand))
         // We can't create a PHI from this operand.
         return false;
