@@ -560,6 +560,13 @@ maybeMarkSanitizerLibraryCallNoBuiltin(CallInst *CI,
 LLVM_ABI bool canReplaceOperandWithVariable(const Instruction *I,
                                             unsigned OpIdx);
 
+/// Given an instruction whose operand OpIdx is a constant, is it cheap to set
+/// that operand to a non-constant value? Unlike canReplaceOperandWithVariable,
+/// this is a profitability check, e.g. division by a constant is typically much
+/// cheaper than division by a variable.
+LLVM_ABI bool replacingOperandWithVariableIsCheap(const Instruction *I,
+                                                  unsigned OpIdx);
+
 //===----------------------------------------------------------------------===//
 //  Value helper functions
 //

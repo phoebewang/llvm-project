@@ -471,6 +471,17 @@ Instruction *InstCombinerImpl::foldPHIArgBinOpIntoPHI(PHINode &PN) {
   if (!LHSVal && !RHSVal)
     return nullptr;
 
+  // Don't turn a constant operand into a variable one if that is known to be
+  // unprofitable, e.g. the divisor of a div/rem, which can only be
+  // strength-reduced while it is a constant.
+  unsigned PhiOpIdx = LHSVal ? 1 : 0;
+  for (Value *V : PN.incoming_values()) {
+    auto *I = cast<Instruction>(V);
+    if (isa<Constant>(I->getOperand(PhiOpIdx)) &&
+        !replacingOperandWithVariableIsCheap(I, PhiOpIdx))
+      return nullptr;
+  }
+
   // Otherwise, this is safe to transform!
 
   Value *InLHS = FirstInst->getOperand(0);

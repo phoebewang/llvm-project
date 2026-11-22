@@ -3970,6 +3970,16 @@ void llvm::maybeMarkSanitizerLibraryCallNoBuiltin(
     CI->addFnAttr(Attribute::NoBuiltin);
 }
 
+// TODO: Refine this. This should avoid cases like turning constant memcpy sizes
+// into variables.
+bool llvm::replacingOperandWithVariableIsCheap(const Instruction *I,
+                                               unsigned OpIdx) {
+  // Divide/Remainder by constant is typically much cheaper than by variable.
+  if (I->isIntDivRem())
+    return OpIdx != 1;
+  return !isa<IntrinsicInst>(I);
+}
+
 bool llvm::canReplaceOperandWithVariable(const Instruction *I, unsigned OpIdx) {
   const auto *Op = I->getOperand(OpIdx);
   // We can't have a PHI with a metadata or token type.

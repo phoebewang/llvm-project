@@ -2238,16 +2238,6 @@ bool SimplifyCFGOpt::hoistSuccIdenticalTerminatorToSwitchOrIf(
   return Changed;
 }
 
-// TODO: Refine this. This should avoid cases like turning constant memcpy sizes
-// into variables.
-static bool replacingOperandWithVariableIsCheap(const Instruction *I,
-                                                int OpIdx) {
-  // Divide/Remainder by constant is typically much cheaper than by variable.
-  if (I->isIntDivRem())
-    return OpIdx != 1;
-  return !isa<IntrinsicInst>(I);
-}
-
 // All instructions in Insts belong to different blocks that all unconditionally
 // branch to a common successor. Analyze each instruction and return true if it
 // would be possible to sink them into their successor, creating one common
